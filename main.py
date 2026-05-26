@@ -29,8 +29,7 @@ TELETHON_SESSION = "IImoderation"
 telethon_client = TelegramClient(
     TELETHON_SESSION, 
     API_ID, 
-    API_HASH, 
-       
+    API_HASH
 )
   
 
@@ -696,7 +695,7 @@ async def ai_moderate_bot(report_id: int):
         if not bot_messages:
             update_report_status(report_id, "rejected")
             await user_bot.send_message(user_id, "   ,     .")
-            await update_ai_status(f""":      (
+            await update_ai_status(f"AI: Жалоба отклонена (бот не найден)")
             return
 
         decision = await analyze_bot_with_ai(description, reason, link, bot_messages)
@@ -720,7 +719,7 @@ async def ai_queue_processor():
         next_report = get_next_unassigned_bot_report()
         if next_report:
             r_id = next_report[0]
-            print(f"[AI]   
+            print(f"[AI] Обработка жалобы #{r_id}")
             await ai_moderate_bot(r_id)
             await asyncio.sleep(random.uniform(35, 40))
         else:
@@ -1041,11 +1040,10 @@ async def process_reason(message: Message, state: FSMContext):
 async def process_link(message: Message, state: FSMContext):
     await state.update_data(link=message.text)
     data = await state.get_data()
-    summary = f"""  :
     summary = f"Opisanie: {data.get('description', '')} Prichina: {data.get('reason', '')} Ssylka: {data.get('link', '')} Vse verno?"
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="", callback_data="user_confirm:yes")],
-        [InlineKeyboardButton(text="", callback_data="user_confirm:no")]
+        [InlineKeyboardButton(text="Da", callback_data="user_confirm:yes")],
+        [InlineKeyboardButton(text="Net", callback_data="user_confirm:no")]
     ])
     await message.answer(summary, reply_markup=kb)
 
@@ -1074,7 +1072,7 @@ async def process_confirm(query: CallbackQuery, state: FSMContext):
     await user_bot.send_message(user_id, "    .")
     report_type = determine_report_type(link)
     if report_type == "bot" and is_auto_moderation_enabled():
-        print(f"[AI Queue]  
+        print(f"[AI Queue] Жалоба #{report_id} добавлена в очередь AI")
     else:
         await notify_all_mods_new_report(report_id)
     await state.clear()
