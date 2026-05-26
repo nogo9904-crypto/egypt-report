@@ -12,37 +12,45 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from openai import AsyncOpenAI
 from telethon import TelegramClient
 from telethon.tl.functions.account import ReportPeerRequest
+
 USER_TOKEN = "8786595257:AAGOFvZ7Miqdlxl--0Xn-VHbcaj0Juqr3Lc"
 MOD_TOKEN = "8787139288:AAFZOTkJNiESWWZ05b2LLBQ8xuDxo4BQw1k"
 MOD_ID = 7479868225
 DB_NAME = "moderation_bot.db"
 COOLDOWN_SECONDS = 60
 MOD_TIMEOUT_SECONDS = 300
+
 OPENROUTER_API_KEY = "  !!!!"
 AI_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025"
 API_ID = 25874957
 API_HASH = "c89ef6fd9ba5c8a479abb1f4d2de248d"
 TELETHON_SESSION = "IImoderation"
+
 telethon_client = TelegramClient(
     TELETHON_SESSION, 
     API_ID, 
     API_HASH
 )
+  
+
 user_bot = Bot(token=USER_TOKEN)
 mod_bot = Bot(token=MOD_TOKEN)
 PERSONAL_DETAILS_TEXTS = [
     "  .  ,  ,  ,  , , ,    ,  ,      .      .",
 ]
+
 SPAM_TEXTS = [
     "-      .   Telegram.  .",
     "  :  ,      . .",
     "   Telegram-.   .     ."
 ]
+
 OTHER_TEXTS = [
     "   Telegram    ( ,   ..).    .",
     "  ,   Telegram.  .  .",
     "  :     ,      . ."
 ]
+
 def get_complaint_text(reason_type: str) -> str:
     texts = {
         "personal_details": PERSONAL_DETAILS_TEXTS,
@@ -50,18 +58,23 @@ def get_complaint_text(reason_type: str) -> str:
         "other": OTHER_TEXTS,
     }
     return random.choice(texts.get(reason_type.lower(), OTHER_TEXTS))
+
 class Form(StatesGroup):
     description = State()
     reason = State()
     link = State()
+
 class BroadcastStates(StatesGroup):
     waiting_text_users = State()
     waiting_text_mods = State()
+
 class OpenRouterStates(StatesGroup):
     waiting_apis = State()
+
 user_storage = MemoryStorage()
 user_dp = Dispatcher(storage=user_storage)
 mod_dp = Dispatcher(storage=MemoryStorage())
+
 def init_db():
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -128,6 +141,7 @@ def init_db():
         conn.close()
     except Exception as e:
         print(f"  : {e}")
+
 def get_openrouter_api_keys() -> list[str]:
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -140,6 +154,7 @@ def get_openrouter_api_keys() -> list[str]:
         return [OPENROUTER_API_KEY]
     except:
         return [OPENROUTER_API_KEY]
+
 def determine_report_type(link: str) -> str:
     if not link:
         return 'channel'
@@ -147,6 +162,7 @@ def determine_report_type(link: str) -> str:
     if l.endswith('bot') or '/bot' in l or l.endswith('/bot?'):
         return 'bot'
     return 'channel'
+
 def get_config(key: str) -> str | None:
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -157,6 +173,7 @@ def get_config(key: str) -> str | None:
         return result[0] if result else None
     except:
         return None
+
 def set_config(key: str, value: str | None):
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -166,6 +183,7 @@ def set_config(key: str, value: str | None):
         conn.close()
     except Exception as e:
         print(f"   '{key}': {e}")
+
 def is_moderator(user_id: int) -> bool:
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -176,6 +194,7 @@ def is_moderator(user_id: int) -> bool:
         return bool(result)
     except:
         return False
+
 def add_moderator(adder_id: int, new_user_id: int) -> bool:
     if adder_id != MOD_ID:
         return False
@@ -189,6 +208,7 @@ def add_moderator(adder_id: int, new_user_id: int) -> bool:
         return True
     except:
         return False
+
 def remove_moderator(user_id: int) -> bool:
     if user_id == MOD_ID:
         return False
@@ -202,6 +222,7 @@ def remove_moderator(user_id: int) -> bool:
         return changes > 0
     except:
         return False
+
 def get_moderators() -> list[int]:
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -212,6 +233,7 @@ def get_moderators() -> list[int]:
         return [r[0] for r in rows] or [MOD_ID]
     except:
         return [MOD_ID]
+
 def count_pending_for_mod(mod_id: int) -> int:
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -225,11 +247,14 @@ def count_pending_for_mod(mod_id: int) -> int:
         return count
     except:
         return 0
+
 def is_auto_moderation_enabled() -> bool:
     value = get_config('auto_moderation_enabled')
     return value == '1'
+
 def set_auto_moderation(enabled: bool):
     set_config('auto_moderation_enabled', '1' if enabled else '0')
+
 async def mod_timeout_processor():
     print("     (5 )")
     while True:
@@ -252,6 +277,7 @@ async def mod_timeout_processor():
                 await assign_and_notify_mod(report_id, MOD_ID)
         except Exception as e:
             print(f" : {e}")
+
 def get_and_increment_order_key() -> float:
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -265,6 +291,7 @@ def get_and_increment_order_key() -> float:
         return new_value
     except:
         return time.time()
+
 def init_user(user_id: int, username: str | None):
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -277,6 +304,7 @@ def init_user(user_id: int, username: str | None):
         conn.close()
     except:
         pass
+
 def update_last_report(user_id: int):
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -289,6 +317,7 @@ def update_last_report(user_id: int):
         conn.close()
     except:
         pass
+
 def is_user_banned(user_id: int) -> bool:
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -299,6 +328,7 @@ def is_user_banned(user_id: int) -> bool:
         return bool(result and result[0] == 1)
     except:
         return False
+
 def set_user_banned(user_id: int, banned: bool = True):
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -311,6 +341,7 @@ def set_user_banned(user_id: int, banned: bool = True):
         conn.close()
     except:
         pass
+
 def insert_report(user_id: int, username: str, description: str, reason: str, link: str) -> int:
     try:
         report_type = determine_report_type(link)
@@ -332,6 +363,7 @@ def insert_report(user_id: int, username: str, description: str, reason: str, li
     except Exception as e:
         print(f"  : {e}")
         return -1
+
 def get_report(report_id: int) -> dict | None:
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -363,6 +395,7 @@ def get_report(report_id: int) -> dict | None:
         }
     except:
         return None
+
 def update_report_status(report_id: int, status: str):
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -372,6 +405,7 @@ def update_report_status(report_id: int, status: str):
         conn.close()
     except:
         pass
+
 def update_report_assigned(report_id: int, mod_id: int | None):
     try:
         now = time.time() if mod_id else None
@@ -382,6 +416,7 @@ def update_report_assigned(report_id: int, mod_id: int | None):
         conn.close()
     except:
         pass
+
 def update_report_ai_info(report_id: int, reason_type: str, confidence: float, explanation: str):
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -395,6 +430,7 @@ def update_report_ai_info(report_id: int, reason_type: str, confidence: float, e
         conn.close()
     except Exception as e:
         print(f"  AI info: {e}")
+
 def get_next_unassigned_pending_report() -> tuple | None:
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -412,6 +448,7 @@ def get_next_unassigned_pending_report() -> tuple | None:
         return row
     except:
         return None
+
 def get_next_unassigned_bot_report() -> tuple | None:
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -430,18 +467,21 @@ def get_next_unassigned_bot_report() -> tuple | None:
         return row
     except:
         return None
+
 def build_initial_mod_kb(report_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="", callback_data=f"mod_action:{report_id}:reject")],
         [InlineKeyboardButton(text="  ", callback_data=f"mod_action:{report_id}:accept_review")],
         [InlineKeyboardButton(text="", callback_data=f"mod_action:{report_id}:next")]
     ])
+
 def build_action_mod_kb(report_id: int, report_type: str, mod_id: int) -> InlineKeyboardMarkup:
     kb = [
         [InlineKeyboardButton(text=" ", callback_data=f"mod_action:{report_id}:measures")],
         [InlineKeyboardButton(text="", callback_data=f"mod_action:{report_id}:ban")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=kb)
+
 def get_all_users() -> list[int]:
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -452,6 +492,7 @@ def get_all_users() -> list[int]:
         return users
     except:
         return []
+
 async def send_broadcast_to_users(text: str):
     users = get_all_users()
     success = 0
@@ -463,6 +504,7 @@ async def send_broadcast_to_users(text: str):
         except:
             pass
     await mod_bot.send_message(MOD_ID, f"  !\n: {success}/{len(users)}")
+
 async def send_broadcast_to_mods(text: str):
     mods = get_moderators()
     success = 0
@@ -473,6 +515,7 @@ async def send_broadcast_to_mods(text: str):
         except:
             pass
     await mod_bot.send_message(MOD_ID, f"  !\n: {success}/{len(mods)}")
+
 async def notify_all_mods_new_report(report_id: int):
     try:
         report = get_report(report_id)
@@ -480,6 +523,7 @@ async def notify_all_mods_new_report(report_id: int):
             return
         username_display = f"@{report['username']}" if report['username'] and report['username'] != "no_username" else str(report['user_id'])
         report_type = report.get("report_type", determine_report_type(report['link']))
+
         ai_info = ""
         if report.get("ai_reason_type"):
             ai_info = f"""<b> :</b>
@@ -488,6 +532,7 @@ async def notify_all_mods_new_report(report_id: int):
 : {report.get('ai_explanation', '')}
  : <code>InputReportReason{report['ai_reason_type'].capitalize()}()</code>
 """
+
         text = f"""<b>  
 <b> :</b> {username_display} (<code>{report['user_id']}</code>)
 <b>:</b> {report_type.upper()}
@@ -496,6 +541,7 @@ async def notify_all_mods_new_report(report_id: int):
 <b>:</b> {report['reason']}
 {ai_info}
 <i> /next      </i>"""
+
         for mid in get_moderators():
             try:
                 await mod_bot.send_message(chat_id=mid, text=text, parse_mode="HTML")
@@ -504,6 +550,7 @@ async def notify_all_mods_new_report(report_id: int):
         print(f"  #{report_id}    (  )")
     except Exception as e:
         print(f"  : {e}")
+
 async def assign_and_notify_mod(report_id: int, forced_mod: int | None = None):
     try:
         report = get_report(report_id)
@@ -515,11 +562,13 @@ async def assign_and_notify_mod(report_id: int, forced_mod: int | None = None):
         update_report_assigned(report_id, mod_id)
         username_display = f"@{report['username']}" if report['username'] and report['username'] != "no_username" else str(report['user_id'])
         report_type = report.get("report_type", determine_report_type(report['link']))
+
         ai_info = ""
         if report.get("ai_reason_type"):
             ai_info = f"""<b> :</b> {report['ai_reason_type'].upper()} ({report.get('ai_confidence',0):.2f})
 : InputReportReason{report['ai_reason_type'].capitalize()}()
 """
+
         text = f"""<b> 
 <b> :</b> {username_display} (<code>{report['user_id']}</code>)
 <b>:</b> {report_type.upper()}
@@ -533,6 +582,7 @@ async def assign_and_notify_mod(report_id: int, forced_mod: int | None = None):
         print(f" #{report_id}   {mod_id}")
     except Exception as e:
         print(f" assign_and_notify_mod {report_id}: {e}")
+
 async def get_or_create_ai_status_message() -> int:
     msg_id = get_config('ai_status_message_id')
     if msg_id:
@@ -544,6 +594,7 @@ async def get_or_create_ai_status_message() -> int:
     )
     set_config('ai_status_message_id', str(msg.message_id))
     return msg.message_id
+
 async def update_ai_status(text: str):
     msg_id = await get_or_create_ai_status_message()
     try:
@@ -556,12 +607,14 @@ async def update_ai_status(text: str):
             set_config('ai_status_message_id', str(new_msg.message_id))
         else:
             print(f"AI status edit error: {e}")
+
 def extract_bot_username(link: str) -> str:
     l = link.strip().lower().rstrip('/')
     username = l.split('/')[-1].lstrip('@').rstrip('/')
     if not username.endswith('bot'):
         username += 'bot'
     return username
+
 async def analyze_bot_with_ai(description: str, reason: str, link: str, bot_messages: list[str]) -> dict:
     prompt = f"""  TG.    (  ).
 : {description}
@@ -593,6 +646,7 @@ async def analyze_bot_with_ai(description: str, reason: str, link: str, bot_mess
         except Exception:
             continue
     return {"reason_type": "other", "confidence": 0.0, "explanation": " "}
+
 async def send_4_complaints(bot_username: str, reason_type: str = "personal_details"):
     global telethon_client
     try:
@@ -610,6 +664,7 @@ async def send_4_complaints(bot_username: str, reason_type: str = "personal_deta
         print(f" 4   @{bot_username}  {reason_type}")
     except Exception as e:
         print(f"  : {e}")
+
 async def ai_moderate_bot(report_id: int):
     global telethon_client
     report = get_report(report_id)
@@ -620,11 +675,13 @@ async def ai_moderate_bot(report_id: int):
     reason = report["reason"]
     user_id = report["user_id"]
     bot_username = report.get("bot_username") or extract_bot_username(link)
+
     update_report_status(report_id, "under_ai_review")
     await update_ai_status(f"""<b>  </b>
 @{bot_username}
 : 
   ...""")
+
     try:
         entity = await telethon_client.get_entity(bot_username)
         await telethon_client.send_message(entity, "/start")
@@ -634,13 +691,16 @@ async def ai_moderate_bot(report_id: int):
             if msg.text:
                 messages.append(msg.text)
         bot_messages = messages[::-1]
+
         if not bot_messages:
             update_report_status(report_id, "rejected")
             await user_bot.send_message(user_id, "   ,     .")
             await update_ai_status(f"AI: Жалоба отклонена (бот не найден)")
             return
+
         decision = await analyze_bot_with_ai(description, reason, link, bot_messages)
         update_report_ai_info(report_id, decision["reason_type"], decision["confidence"], decision["explanation"])
+
         update_report_status(report_id, "pending")
         await notify_all_mods_new_report(report_id)
         await update_ai_status(f"  (#{report_id}) : {decision['reason_type'].upper()} ({decision['confidence']:.2f}) : InputReportReason{decision['reason_type'].capitalize()}()  ")
@@ -649,6 +709,7 @@ async def ai_moderate_bot(report_id: int):
         update_report_status(report_id, "pending")
         await notify_all_mods_new_report(report_id)
         await update_ai_status(f"  (#{report_id})    ")
+
 async def ai_queue_processor():
     print("         ")
     while True:
@@ -663,6 +724,7 @@ async def ai_queue_processor():
             await asyncio.sleep(random.uniform(35, 40))
         else:
             await asyncio.sleep(5)
+
 def get_statistics():
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -694,11 +756,13 @@ def get_statistics():
         }
     except:
         return {"total_users": 0, "total_reports": 0, "pending_reports": 0, "accepted_bots": 0, "rejected_bots": 0, "accepted_channels": 0, "rejected_channels": 0, "auto_moderation": ""}
+
 @mod_dp.message(Command("start"))
 async def mod_cmd_start(message: Message):
     if not is_moderator(message.from_user.id):
         return
     await cmd_start_moderation_content(message)
+
 @mod_dp.message(Command("statistic"))
 async def cmd_statistic(message: Message):
     if not is_moderator(message.from_user.id):
@@ -714,6 +778,7 @@ async def cmd_statistic(message: Message):
   : <b>{s['pending_reports']}</b>
 -  (): <b>{s['auto_moderation']}</b>"""
     await message.answer(text, parse_mode="HTML")
+
 @mod_dp.callback_query(F.data.startswith("export:"))
 async def export_data(query: CallbackQuery):
     if not is_moderator(query.from_user.id):
@@ -739,18 +804,21 @@ async def export_data(query: CallbackQuery):
     document = BufferedInputFile(content.encode("utf-8"), filename=f"{export_type}_report.txt")
     await mod_bot.send_document(chat_id=query.message.chat.id, document=document, caption=f": {title}")
     await query.answer(" !")
+
 @mod_dp.message(Command("startautomoderationocher"))
 async def cmd_start_ai_queue(message: Message):
     if not is_moderator(message.from_user.id):
         return
     set_auto_moderation(True)
     await message.answer("-  <b></b> ( ).", parse_mode="HTML")
+
 @mod_dp.message(Command("stopautomoderationocher"))
 async def cmd_stop_ai_queue(message: Message):
     if not is_moderator(message.from_user.id):
         return
     set_auto_moderation(False)
     await message.answer("-  <b></b>.", parse_mode="HTML")
+
 @mod_dp.message(Command("start_moderation_content"))
 async def cmd_start_moderation_content(message: Message):
     if not is_moderator(message.from_user.id):
@@ -771,6 +839,7 @@ async def cmd_start_moderation_content(message: Message):
         kb_list.append([InlineKeyboardButton(text="API OpenRouter", callback_data="mod_menu:openrouter_apis")])
     kb = InlineKeyboardMarkup(inline_keyboard=kb_list)
     await message.answer("<b> </b>\n :", reply_markup=kb, parse_mode="HTML")
+
 @mod_dp.callback_query(F.data.startswith("mod_menu:"))
 async def mod_menu_callback(query: CallbackQuery, state: FSMContext):
     action = query.data.split(":")[1]
@@ -813,6 +882,7 @@ async def mod_menu_callback(query: CallbackQuery, state: FSMContext):
         await query.message.edit_text("   :\n/cancel  ", parse_mode="HTML")
         await state.set_state(OpenRouterStates.waiting_apis)
     await query.answer()
+
 @mod_dp.message(OpenRouterStates.waiting_apis)
 async def process_openrouter_apis(message: Message, state: FSMContext):
     if message.text.strip() == "/cancel":
@@ -827,6 +897,7 @@ async def process_openrouter_apis(message: Message, state: FSMContext):
     except:
         await message.answer(".")
         await state.clear()
+
 @mod_dp.message(BroadcastStates.waiting_text_users)
 async def process_broadcast_users(message: Message, state: FSMContext):
     if message.text == "/cancel":
@@ -835,6 +906,7 @@ async def process_broadcast_users(message: Message, state: FSMContext):
         return
     await send_broadcast_to_users(message.text)
     await state.clear()
+
 @mod_dp.message(BroadcastStates.waiting_text_mods)
 async def process_broadcast_mods(message: Message, state: FSMContext):
     if message.text == "/cancel":
@@ -843,6 +915,7 @@ async def process_broadcast_mods(message: Message, state: FSMContext):
         return
     await send_broadcast_to_mods(message.text)
     await state.clear()
+
 @mod_dp.message(Command("next"))
 async def cmd_next(message: Message):
     if not is_moderator(message.from_user.id):
@@ -854,6 +927,7 @@ async def cmd_next(message: Message):
         await message.answer("   !")
     else:
         await message.answer(" .      .")
+
 @mod_dp.message(Command("mods"))
 async def cmd_mods(message: Message):
     if not is_moderator(message.from_user.id):
@@ -870,6 +944,7 @@ async def cmd_mods(message: Message):
         await message.answer(text, parse_mode="HTML")
     except:
         await message.answer(".")
+
 @mod_dp.message(Command("addmod"))
 async def cmd_addmod(message: Message):
     if message.from_user.id != MOD_ID:
@@ -883,6 +958,7 @@ async def cmd_addmod(message: Message):
             await message.answer("  .")
     except:
         await message.answer("/addmod <user_id>")
+
 @mod_dp.message(Command("removemod"))
 async def cmd_removemod(message: Message):
     if message.from_user.id != MOD_ID:
@@ -896,6 +972,7 @@ async def cmd_removemod(message: Message):
             await message.answer("  .")
     except:
         await message.answer("/removemod <user_id>")
+
 @mod_dp.message(Command("unban"))
 async def cmd_unban(message: Message):
     if not is_moderator(message.from_user.id):
@@ -906,6 +983,7 @@ async def cmd_unban(message: Message):
         await message.answer(f" {uid} .")
     except:
         await message.answer("/unban <user_id>")
+
 @mod_dp.message(Command("help"))
 async def cmd_help(message: Message):
     if not is_moderator(message.from_user.id):
@@ -920,6 +998,7 @@ async def cmd_help(message: Message):
  /stopautomoderationocher   
    .  5     ."""
     await message.answer(text, parse_mode="HTML")
+
 @user_dp.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
     user_id = message.from_user.id
@@ -933,6 +1012,7 @@ async def cmd_start(message: Message, state: FSMContext):
         return
     await message.answer("! ,   ,     :")
     await state.set_state(Form.description)
+
 def get_last_report_time(user_id: int):
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -943,16 +1023,19 @@ def get_last_report_time(user_id: int):
         return row[0] if row else 0
     except:
         return 0
+
 @user_dp.message(Form.description)
 async def process_description(message: Message, state: FSMContext):
     await state.update_data(description=message.text)
     await message.answer("   :")
     await state.set_state(Form.reason)
+
 @user_dp.message(Form.reason)
 async def process_reason(message: Message, state: FSMContext):
     await state.update_data(reason=message.text)
     await message.answer("   ,   :")
     await state.set_state(Form.link)
+
 @user_dp.message(Form.link)
 async def process_link(message: Message, state: FSMContext):
     await state.update_data(link=message.text)
@@ -963,6 +1046,7 @@ async def process_link(message: Message, state: FSMContext):
         [InlineKeyboardButton(text="Net", callback_data="user_confirm:no")]
     ])
     await message.answer(summary, reply_markup=kb)
+
 @user_dp.callback_query(F.data.startswith("user_confirm:"))
 async def process_confirm(query: CallbackQuery, state: FSMContext):
     action = query.data.split(":")[1]
@@ -993,6 +1077,7 @@ async def process_confirm(query: CallbackQuery, state: FSMContext):
         await notify_all_mods_new_report(report_id)
     await state.clear()
     await query.answer(" ")
+
 @mod_dp.callback_query(F.data.startswith("mod_action:"))
 async def mod_action(query: CallbackQuery):
     parts = query.data.split(":")
@@ -1005,10 +1090,12 @@ async def mod_action(query: CallbackQuery):
     if report.get("assigned_to") and report["assigned_to"] != query.from_user.id:
         await query.answer("    !")
         return
+
     user_id = report["user_id"]
     report_type = report.get("report_type", determine_report_type(report["link"]))
     bot_username = report.get("bot_username") or extract_bot_username(report["link"])
     current_mod = query.from_user.id
+
     if action == "reject":
         update_report_status(report_id, "rejected")
         await user_bot.send_message(user_id, "   ,     .")
@@ -1017,6 +1104,7 @@ async def mod_action(query: CallbackQuery):
         next_r = get_next_unassigned_pending_report()
         if next_r:
             await assign_and_notify_mod(next_r[0], current_mod)
+
     elif action == "next":
         update_report_assigned(report_id, None)
         await query.answer("")
@@ -1024,12 +1112,14 @@ async def mod_action(query: CallbackQuery):
         next_r = get_next_unassigned_pending_report()
         if next_r:
             await assign_and_notify_mod(next_r[0], current_mod)
+
     elif action == "accept_review":
         update_report_status(report_id, "under_review")
         await user_bot.send_message(user_id, "    .")
         await query.answer("")
         new_kb = build_action_mod_kb(report_id, report_type, current_mod)
         await query.message.edit_reply_markup(reply_markup=new_kb)
+
     elif action == "measures":
         update_report_status(report_id, "measures_taken")
         if report_type == "bot":
@@ -1046,6 +1136,7 @@ async def mod_action(query: CallbackQuery):
         next_r = get_next_unassigned_pending_report()
         if next_r:
             await assign_and_notify_mod(next_r[0], current_mod)
+
     elif action == "ban":
         update_report_status(report_id, "banned")
         await user_bot.send_message(user_id, "     ")
@@ -1060,6 +1151,7 @@ async def mod_action(query: CallbackQuery):
         next_r = get_next_unassigned_pending_report()
         if next_r:
             await assign_and_notify_mod(next_r[0], current_mod)
+
 async def main():
     global telethon_client
     init_db()
@@ -1077,5 +1169,6 @@ async def main():
         user_dp.start_polling(user_bot),
         mod_dp.start_polling(mod_bot)
     )
+
 if __name__ == "__main__":
     asyncio.run(main())
